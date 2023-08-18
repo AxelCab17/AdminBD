@@ -213,3 +213,229 @@ C:\> IMPDP SYSTEM/root directory=BACKUPPROYECTO dumpfile=COPIAS.DMP tables=SYSTE
 --Ã“ importamos la base con el siguiente comando:
 C:\> IMPDP SYSTEM/root directory=BACKUPPROYECTO dumpfile=SYSTEM.DMP SCHEMAS=SYSTEM
 -- RESPALDOS EN CALIENTE
+
+
+--____________________________________________________________________________--
+
+
+--Autoria que registre cuando se crea una tabla.
+CREATE TABLE Tablas_Creadas_Auditoria (
+   tabla_nombre VARCHAR2(100),
+   fecha_creacion TIMESTAMP,
+   usuario_creacion VARCHAR2(30)
+);
+
+CREATE OR REPLACE TRIGGER Trigger_Tabla_Creada
+AFTER CREATE ON SCHEMA
+DECLARE
+   tabla_nombre VARCHAR2(100);
+   usuario_creacion VARCHAR2(30);
+BEGIN
+   -- Obtener el nombre de la tabla creada
+   tabla_nombre := ora_dict_obj_name;
+   -- Obtener el usuario que creó la tabla
+   usuario_creacion := ora_login_user;
+   
+   -- Insertar el registro en la tabla de auditoría
+   INSERT INTO Tablas_Creadas_Auditoria (tabla_nombre, fecha_creacion, usuario_creacion)
+   VALUES (tabla_nombre, CURRENT_TIMESTAMP, usuario_creacion);
+   
+   COMMIT;
+EXCEPTION
+   WHEN OTHERS THEN
+      NULL; -- Manejar excepciones si es necesario
+END;
+/
+
+-- Crear una nueva tabla de ejemplo
+CREATE TABLE EjemploTabla (
+   id NUMBER,
+   nombre VARCHAR2(50)
+);
+
+-- Consultar la tabla de auditoría
+SELECT * FROM Tablas_Creadas_Auditoria;
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+-- Auditoria de usuarios creados:
+
+--Creamos la tabla para registrar la auditoria
+CREATE TABLE Usuarios_Creados_Auditoria (
+   usuario_nombre VARCHAR2(30),
+   fecha_creacion TIMESTAMP,
+   usuario_admin VARCHAR2(30)
+);
+
+--Creamos el trigger
+CREATE OR REPLACE TRIGGER Trigger_Usuario_Creado
+AFTER CREATE ON SCHEMA
+DECLARE
+   usuario_nombre VARCHAR2(30);
+   usuario_admin VARCHAR2(30);
+BEGIN
+   -- Obtener el nombre de usuario creado
+   usuario_nombre := ora_dict_obj_name;
+   -- Obtener el usuario administrador que creó el usuario
+   usuario_admin := ora_login_user;
+   -- Insertar el registro en la tabla de auditoría
+   INSERT INTO Usuarios_Creados_Auditoria (usuario_nombre, fecha_creacion, usuario_admin)
+   VALUES (usuario_nombre, CURRENT_TIMESTAMP, usuario_admin);
+   
+   COMMIT;
+EXCEPTION
+   WHEN OTHERS THEN
+      NULL; -- Manejar excepciones si es necesario
+END;
+/
+-- Crear un nuevo usuario de ejemplo
+CREATE USER NuevoUsuario IDENTIFIED BY password;
+
+-- Consultar la tabla de auditoría de usuarios creados
+SELECT * FROM Usuarios_Creados_Auditoria;
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+--Auditoria de sesion a la base de datos:
+
+--Creamos la tabla donde se almacena la auditoria de sesion
+
+CREATE TABLE Sesiones_Iniciadas_Auditoria (
+   usuario_nombre VARCHAR2(30),
+   fecha_inicio TIMESTAMP,
+   direccion_ip VARCHAR2(50)
+);
+
+--Trigger para la auditoria de sesion:
+
+CREATE OR REPLACE TRIGGER Trigger_Sesion_Iniciada
+AFTER LOGON ON DATABASE
+DECLARE
+   usuario_nombre VARCHAR2(30);
+   direccion_ip VARCHAR2(50);
+BEGIN
+   -- Obtener el nombre de usuario que inició sesión
+   usuario_nombre := ora_login_user;
+   -- Obtener la dirección IP del cliente
+   direccion_ip := SYS_CONTEXT('USERENV', 'IP_ADDRESS');
+   
+   -- Insertar el registro en la tabla de auditoría
+   INSERT INTO Sesiones_Iniciadas_Auditoria (usuario_nombre, fecha_inicio, direccion_ip)
+   VALUES (usuario_nombre, CURRENT_TIMESTAMP, direccion_ip);
+   
+   COMMIT;
+EXCEPTION
+   WHEN OTHERS THEN
+      NULL; -- Manejar excepciones si es necesario
+END;
+/
+
+-- Consultar la tabla de auditoría de sesiones iniciadas
+SELECT * FROM Sesiones_Iniciadas_Auditoria;
+
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+CREATE TABLE Acciones_Auditoria (
+   accion_nombre VARCHAR2(100),
+   fecha_accion TIMESTAMP,
+   usuario_ejecutor VARCHAR2(30)
+);
+
+
+CREATE OR REPLACE TRIGGER Trigger_Eliminacion_Tabla
+AFTER DROP ON SCHEMA
+DECLARE
+   tabla_eliminada VARCHAR2(100);
+   usuario_ejecutor VARCHAR2(30);
+BEGIN
+   -- Obtener el nombre de la tabla eliminada
+   tabla_eliminada := ora_dict_obj_name;
+   -- Obtener el usuario que ejecutó la acción
+   usuario_ejecutor := ora_login_user;
+   
+   -- Insertar el registro en la tabla de auditoría
+   INSERT INTO Acciones_Auditoria (accion_nombre, fecha_accion, usuario_ejecutor)
+   VALUES ('Tabla eliminada: ' || tabla_eliminada, CURRENT_TIMESTAMP, usuario_ejecutor);
+   
+   COMMIT;
+EXCEPTION
+   WHEN OTHERS THEN
+      NULL; -- Manejar excepciones si es necesario
+END;
+/
+--Crear tabla de ejemplo:
+CREATE TABLE PRUEBA_AUDITORIA_BORRAR (
+   accion_nombre VARCHAR2(100),
+   fecha_accion TIMESTAMP,
+   usuario_ejecutor VARCHAR2(30)
+);
+
+-- Eliminar una tabla de ejemplo:
+DROP TABLE PRUEBA_AUDITORIA_BORRAR;
+
+-- Consultar la tabla de auditoría de acciones
+SELECT * FROM Acciones_Auditoria;
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+-- Consultar las opciones de auditoría habilitadas
+SELECT * FROM DBA_PRIV_AUDIT_OPTS;
+
+--
+
+-- 1. Habilitar la auditoría de creación de sesión para capturar la creación de usuarios
+AUDIT CREATE SESSION;
+-- 2. Crear una política de auditoría para filtrar eventos de creación de usuarios
+AUDIT POLICY Create_User_Policy;
+-- 3. Habilitar la política de auditoría de creación de usuario
+ALTER SYSTEM SET AUDIT_SYS_OPERATIONS=TRUE SCOPE=SPFILE;
+-- 4. Reiniciar la base de datos para aplicar los cambios
+SHUTDOWN IMMEDIATE
+STARTUP
+-- 5. Consultar la vista de auditoría para obtener información sobre la creación de usuarios
+SELECT * FROM DBA_AUDIT_TRAIL WHERE ACTION_NAME = 'LOGON';
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+-- Auditoria sin Triggers para auditar la creacion de roles:
+
+-- 1. Habilitar la auditoría de creación de roles
+AUDIT CREATE ROLE;
+
+-- 2. Habilitar la auditoría de uso de roles para capturar el cambio de roles
+AUDIT ROLE;
+
+-- 3. Habilitar la auditoría de políticas para capturar los cambios de roles
+AUDIT POLICY Roles_Policy;
+
+-- 4. Habilitar la auditoría de políticas para capturar el uso de roles
+AUDIT POLICY Roles_Usage_Policy;
+
+-- 5. Habilitar las políticas de auditoría en el nivel del sistema
+ALTER SYSTEM SET AUDIT_SYS_OPERATIONS=TRUE SCOPE=SPFILE;
+
+-- 6: Reiniciar la base de datos.
+
+-- Crear un nuevo rol
+CREATE ROLE MiNuevoRol;
+
+--Crear usuario para asignarle el nuevo rol, al nuevo usuario
+CREATE USER MiNuevoUsuario IDENTIFIED BY contraseña;
+
+-- Asignar el nuevo rol a un usuario
+GRANT MiNuevoRol TO MiNuevoUsuario;
+
+-- 7. Consultar la vista de auditoría para obtener información sobre la creación y el uso de roles
+SELECT * FROM DBA_AUDIT_TRAIL WHERE ACTION_NAME = 'CREATE ROLE' OR ACTION_NAME = 'GRANT ROLE';
+
+
+
+
