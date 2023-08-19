@@ -173,6 +173,10 @@ GRANT CONNECT, RESOURCE TO doctor;
 CREATE USER cliente IDENTIFIED BY cliente_password;
 GRANT CONNECT TO cliente;
 
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- RESPALDOS:
+
 /*El usuario admin tiene roles CONNECT, RESOURCE y DBA, lo que le da acceso completo a la base de datos y privilegios de administración.
 El usuario doctor tiene roles CONNECT y RESOURCE, lo que le proporciona un acceso general a la base de datos y la capacidad de trabajar con recursos.
 El usuario cliente solo tiene el rol CONNECT, lo que le permite conectarse a la base de datos.*/
@@ -214,11 +218,50 @@ C:\> IMPDP SYSTEM/root directory=BACKUPPROYECTO dumpfile=COPIAS.DMP tables=SYSTE
 C:\> IMPDP SYSTEM/root directory=BACKUPPROYECTO dumpfile=SYSTEM.DMP SCHEMAS=SYSTEM
 -- RESPALDOS EN CALIENTE
 
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- Seguridad (roles y otros permisos) Ignacio:
 
---____________________________________________________________________________--
+
+-- Crear roles
+CREATE ROLE admin_role;
+CREATE ROLE doctor_role;
+CREATE ROLE client_role;
+
+-- Conceder los privilegios de cada rol
+-- Para admin_role
+GRANT CONNECT, RESOURCE, DBA TO admin_role;
+
+-- Para doctor_role
+GRANT CONNECT, RESOURCE TO doctor_role;
+
+-- Para client_role
+GRANT CONNECT TO client_role;
+
+-- Asignar roles a usuarios
+ALTER USER admin IDENTIFIED BY admin_password;
+GRANT admin_role TO admin;
+
+ALTER USER doctor IDENTIFIED BY doctor_password;
+GRANT doctor_role TO doctor;
+
+ALTER USER cliente IDENTIFIED BY cliente_password;
+GRANT client_role TO cliente;
+
+-- Privilegio SELECT en la tabla Procedimientos al rol doctor_role
+GRANT SELECT ON Procedimientos TO doctor_role;
+
+-- Activar la auditor?a para actividades espec?ficas
+AUDIT SELECT TABLE, UPDATE TABLE BY admin_role;
+AUDIT INSERT TABLE, DELETE TABLE BY doctor_role;
 
 
---Autoria que registre cuando se crea una tabla.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- AUDITORIAS:
+
+
+--Autorias que registre cuando se crea una tabla.
 CREATE TABLE Tablas_Creadas_Auditoria (
    tabla_nombre VARCHAR2(100),
    fecha_creacion TIMESTAMP,
