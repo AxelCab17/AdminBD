@@ -4,16 +4,16 @@
 
 -- CreaciÃƒÂ³n de Tablespaces
 CREATE TABLESPACE TS_PROCEDIMIENTOS 
-DATAFILE 'C:\AdminDB\Procedimientos01.dbf' SIZE 50M AUTOEXTEND ON;
+DATAFILE 'C:\xampp\htdocs\AdminBD\Procedimientos01.dbf' SIZE 50M AUTOEXTEND ON;
 
 CREATE TABLESPACE TS_DENTISTAS 
-DATAFILE 'C:\AdminDB\Dentistas01.dbf' SIZE 50M AUTOEXTEND ON;
+DATAFILE 'C:\xampp\htdocs\AdminBD\Dentistas01.dbf' SIZE 50M AUTOEXTEND ON;
 
 CREATE TABLESPACE TS_PACIENTES 
-DATAFILE 'C:\AdminDB\Pacientes01.dbf' SIZE 50M AUTOEXTEND ON;
+DATAFILE 'C:\xampp\htdocs\AdminBD\Pacientes01.dbf' SIZE 50M AUTOEXTEND ON;
 
 CREATE TABLESPACE TS_CITAS 
-DATAFILE 'C:\AdminDB\Citas01.dbf' SIZE 100M AUTOEXTEND ON;
+DATAFILE 'C:\xampp\htdocs\AdminBD\Citas01.dbf' SIZE 100M AUTOEXTEND ON;
 
 -- CreaciÃƒÂ³n de Tablas
 CREATE TABLE Procedimientos (
@@ -140,21 +140,21 @@ SELECT * FROM Pacientes;
 SELECT * FROM Citas;
 
 -- Recuperar citas para un paciente especÃ­fico
-SELECT * FROM Citas WHERE idPaciente = <id_paciente>;
+SELECT * FROM Citas WHERE idPaciente = 1;
 
 -- Recuperar citas para un dentista especÃ­fico
-SELECT * FROM Citas WHERE idDentista = <id_dentista>;
+SELECT * FROM Citas WHERE idDentista = 2;
 
 -- Recuperar citas para un procedimiento especÃ­fico
-SELECT * FROM Citas WHERE idProcedimiento = <id_procedimiento>;
+SELECT * FROM Citas WHERE idProcedimiento = 4;
 
 -- Recuperar citas dentro de un rango de fechas
-SELECT * FROM Citas WHERE fechaCita BETWEEN TO_DATE('<fecha_inicio>', 'YYYY-MM-DD') AND TO_DATE('<fecha_fin>', 'YYYY-MM-DD');
+SELECT * FROM Citas WHERE fechaCita BETWEEN TO_DATE('2023-08-15', 'YYYY-MM-DD') AND TO_DATE('2023-08-20', 'YYYY-MM-DD');
 
 -- Recuperar el costo total de procedimientos para un paciente especÃ­fico
 SELECT idPaciente, SUM(costo) AS costo_total
 FROM Citas
-WHERE idPaciente = <id_paciente>
+WHERE idPaciente = 2
 GROUP BY idPaciente;
 
 -- Recuperar el procedimiento mÃ¡s costoso
@@ -172,6 +172,20 @@ GRANT CONNECT, RESOURCE TO doctor;
 -- Crear el usuario cliente
 CREATE USER cliente IDENTIFIED BY cliente_password;
 GRANT CONNECT TO cliente;
+SELECT username FROM dba_users; -- O también puedes usar all_users
+
+
+-- Visualizar todos los usuarios de la BD:
+SET SERVEROUTPUT ON;
+DECLARE
+  v_username VARCHAR2(30);
+BEGIN
+  FOR user_rec IN (SELECT username FROM all_users) LOOP
+    v_username := user_rec.username;
+    DBMS_OUTPUT.PUT_LINE('Usuario: ' || v_username);
+  END LOOP;
+END;
+/
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -195,6 +209,7 @@ C:\martes223>SQL PLUS /NOLOG
 SQL> CONNECT /AS SYSDBA;   
 SQL> STARTUP
 SQL> EXIT
+
 -- RESPALDOS CON EXPDP E IMPDP
 -- En el CMD
 C:\Users\kenne>SQL PLUS /NOLOG
@@ -202,10 +217,12 @@ SQL> CONNECT /AS SYSDBA;
 SQL>CREATE DIRECTORY BACKUPPROYECTO AS  â€˜C:\RESPALDOâ€™;
 SQL>GRANT WRITE ON DIRECTORY BACKUPPROYECTO TO SYSTEM;
 SQL>EXIT
+
 --En SqlDeveloper con el siguiente comando damos permisos para poder hacer una exportacion o importacion completa:
 GRANT EXP_FULL_DATABASE TO SYSTEM;
 GRANT IMP_FULL_DATABASE TO SYSTEM;
 CREATE TABLE COPIA AS SELECT * FROM Procedimientos;
+
 --Exportamos la tabla  con el siguiente comando:
 C:\> EXPDP SYSTEM/root directory=BACKUPPROYECTO dumpfile=COPIAS.DMP tables=SYSTEM.Procedimientos
 --Ã“ tambien podemos exportamos la base con el siguiente comando:
@@ -222,15 +239,26 @@ C:\> IMPDP SYSTEM/root directory=BACKUPPROYECTO dumpfile=SYSTEM.DMP SCHEMAS=SYST
 --------------------------------------------------------------------------------
 -- Seguridad (roles y otros permisos) Ignacio:
 
-
 -- Crear roles
-CREATE ROLE admin_role;
+CREATE ROLE admin_role2;
 CREATE ROLE doctor_role;
 CREATE ROLE client_role;
 
--- Conceder los privilegios de cada rol
+-- Visualizar los roles:
+SET SERVEROUTPUT ON;
+DECLARE
+  v_role_name VARCHAR2(30);
+BEGIN
+  FOR role_rec IN (SELECT role FROM dba_roles) LOOP
+    v_role_name := role_rec.role;
+    DBMS_OUTPUT.PUT_LINE('Rol: ' || v_role_name);
+  END LOOP;
+END;
+/
+
+-- Conceder los privilegios de cada rol:
 -- Para admin_role
-GRANT CONNECT, RESOURCE, DBA TO admin_role;
+GRANT CONNECT, RESOURCE, DBA TO admin_role2;
 
 -- Para doctor_role
 GRANT CONNECT, RESOURCE TO doctor_role;
@@ -238,9 +266,27 @@ GRANT CONNECT, RESOURCE TO doctor_role;
 -- Para client_role
 GRANT CONNECT TO client_role;
 
--- Asignar roles a usuarios
+--Visualizar los permisos de cada rol:
+DECLARE
+  v_role_name VARCHAR2(30);
+  v_privilege VARCHAR2(100);
+BEGIN
+  FOR role_rec IN (SELECT grantee, granted_role FROM dba_role_privs) LOOP
+    v_role_name := role_rec.granted_role;
+    v_privilege := role_rec.grantee;
+    DBMS_OUTPUT.PUT_LINE('Rol: ' || v_role_name || ', Otorgado a: ' || v_privilege);
+  END LOOP;
+END;
+/
+/*
+Rol: DOCTOR_ROLE, Otorgado a: ADMINISTRACION
+Rol: ADMIN_ROLE2, Otorgado a: ADMINISTRACION
+*/
+
+
+-- Asignar roles a usuarios:
 ALTER USER admin IDENTIFIED BY admin_password;
-GRANT admin_role TO admin;
+GRANT admin_role2 TO admin;
 
 ALTER USER doctor IDENTIFIED BY doctor_password;
 GRANT doctor_role TO doctor;
@@ -248,18 +294,35 @@ GRANT doctor_role TO doctor;
 ALTER USER cliente IDENTIFIED BY cliente_password;
 GRANT client_role TO cliente;
 
+-- Visualizar el usuario y su rol asignado:
+DECLARE
+  v_user_name VARCHAR2(30);
+  v_role_name VARCHAR2(30);
+BEGIN
+  FOR user_role_rec IN (SELECT grantee AS username, granted_role FROM dba_role_privs) LOOP
+    v_user_name := user_role_rec.username;
+    v_role_name := user_role_rec.granted_role;
+    DBMS_OUTPUT.PUT_LINE('Usuario: ' || v_user_name || ', Rol: ' || v_role_name);
+  END LOOP;
+END;
+/
+
 -- Privilegio SELECT en la tabla Procedimientos al rol doctor_role
 GRANT SELECT ON Procedimientos TO doctor_role;
 
--- Activar la auditor?a para actividades espec?ficas
-AUDIT SELECT TABLE, UPDATE TABLE BY admin_role;
-AUDIT INSERT TABLE, DELETE TABLE BY doctor_role;
+-- Activar la auditoría para actividades espec?ficas:
+-- Para el usuario admin_role2
+AUDIT SELECT TABLE, UPDATE TABLE BY admin;
+AUDIT INSERT TABLE, DELETE TABLE BY admin;
+
+-- Para el usuario doctor_role
+AUDIT SELECT TABLE, UPDATE TABLE BY doctor;
+AUDIT INSERT TABLE, DELETE TABLE BY doctor;
 
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 -- AUDITORIAS:
-
 
 --Autorias que registre cuando se crea una tabla.
 CREATE TABLE Tablas_Creadas_Auditoria (
@@ -333,11 +396,11 @@ EXCEPTION
 END;
 /
 -- Crear un nuevo usuario de ejemplo
-CREATE USER NuevoUsuario IDENTIFIED BY password;
+CREATE USER Nuevo123USUARIO IDENTIFIED BY password;
+--DROP USER Nuevo123USUARIO CASCADE;
 
 -- Consultar la tabla de auditoría de usuarios creados
 SELECT * FROM Usuarios_Creados_Auditoria;
-
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -345,7 +408,6 @@ SELECT * FROM Usuarios_Creados_Auditoria;
 --Auditoria de sesion a la base de datos:
 
 --Creamos la tabla donde se almacena la auditoria de sesion
-
 CREATE TABLE Sesiones_Iniciadas_Auditoria (
    usuario_nombre VARCHAR2(30),
    fecha_inicio TIMESTAMP,
@@ -384,12 +446,13 @@ SELECT * FROM Sesiones_Iniciadas_Auditoria;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+-- Auditoria con trigger sobre una accion de una tabla:
+
 CREATE TABLE Acciones_Auditoria (
    accion_nombre VARCHAR2(100),
    fecha_accion TIMESTAMP,
    usuario_ejecutor VARCHAR2(30)
 );
-
 
 CREATE OR REPLACE TRIGGER Trigger_Eliminacion_Tabla
 AFTER DROP ON SCHEMA
@@ -427,28 +490,22 @@ SELECT * FROM Acciones_Auditoria;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
--- Consultar las opciones de auditoría habilitadas
+-- Ver todas las opciones de auditorias habilitadas en la Base de Datos:
 SELECT * FROM DBA_PRIV_AUDIT_OPTS;
 
 --
-
--- 1. Habilitar la auditoría de creación de sesión para capturar la creación de usuarios
+-- 1. Habilitar la auditoría de todas las sesiones a la Base de Datos:
 AUDIT CREATE SESSION;
--- 2. Crear una política de auditoría para filtrar eventos de creación de usuarios
-AUDIT POLICY Create_User_Policy;
--- 3. Habilitar la política de auditoría de creación de usuario
-ALTER SYSTEM SET AUDIT_SYS_OPERATIONS=TRUE SCOPE=SPFILE;
--- 4. Reiniciar la base de datos para aplicar los cambios
-SHUTDOWN IMMEDIATE
-STARTUP
--- 5. Consultar la vista de auditoría para obtener información sobre la creación de usuarios
+
+-- 2. Reiniciar la base de datos para aplicar los cambios.
+-- 3. Consultar la vista de auditoría sobre iniciar sesión:
 SELECT * FROM DBA_AUDIT_TRAIL WHERE ACTION_NAME = 'LOGON';
 
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
--- Auditoria sin Triggers para auditar la creacion de roles:
+-- Auditoria sin Triggers para registrar la creacion de Roles:
 
 -- 1. Habilitar la auditoría de creación de roles
 AUDIT CREATE ROLE;
@@ -456,29 +513,48 @@ AUDIT CREATE ROLE;
 -- 2. Habilitar la auditoría de uso de roles para capturar el cambio de roles
 AUDIT ROLE;
 
--- 3. Habilitar la auditoría de políticas para capturar los cambios de roles
-AUDIT POLICY Roles_Policy;
-
--- 4. Habilitar la auditoría de políticas para capturar el uso de roles
-AUDIT POLICY Roles_Usage_Policy;
-
--- 5. Habilitar las políticas de auditoría en el nivel del sistema
+--3. habilitar o deshabilitar la auditoría de operaciones del sistema en Oracle
 ALTER SYSTEM SET AUDIT_SYS_OPERATIONS=TRUE SCOPE=SPFILE;
 
--- 6: Reiniciar la base de datos.
+-- 4: Reiniciar la base de datos.
 
 -- Crear un nuevo rol
 CREATE ROLE MiNuevoRol;
+--DROP ROLE MiNuevoRol;
 
 --Crear usuario para asignarle el nuevo rol, al nuevo usuario
 CREATE USER MiNuevoUsuario IDENTIFIED BY contraseña;
+--DROP USER MiNuevoUsuario CASCADE;
 
 -- Asignar el nuevo rol a un usuario
 GRANT MiNuevoRol TO MiNuevoUsuario;
 
--- 7. Consultar la vista de auditoría para obtener información sobre la creación y el uso de roles
+-- 7. Visualizar la información de la auditoría para ver los roles creados.
 SELECT * FROM DBA_AUDIT_TRAIL WHERE ACTION_NAME = 'CREATE ROLE' OR ACTION_NAME = 'GRANT ROLE';
 
 
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+-- Auditoria sin Triggers para registrar la creacion de Roles:
+
+-- Habilitar la auditoría de creación de usuarios
+AUDIT CREATE USER;
+
+-- Habilitar la auditoría de asignación de roles
+AUDIT ROLE;
+
+-- Habilitar las políticas de auditoría en el nivel del sistema
+ALTER SYSTEM SET AUDIT_SYS_OPERATIONS=TRUE SCOPE=SPFILE;
+
+-- Crear un nuevo usuario
+CREATE USER PRUEBAFINAL IDENTIFIED BY contraseña;
+--DROP USER MiNuevoUsuario CASCADE; 
+
+-- Asignar un nuevo rol a un usuario
+GRANT MiNuevoRol TO PRUEBAFINAL;
+
+-- Visualizar la información de la auditoría para ver los usuarios creados y asignaciones de roles
+SELECT * FROM DBA_AUDIT_TRAIL WHERE ACTION_NAME = 'CREATE USER' OR ACTION_NAME = 'GRANT ROLE';
 
 
