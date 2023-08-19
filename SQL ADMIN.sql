@@ -352,13 +352,11 @@ EXCEPTION
       NULL; -- Manejar excepciones si es necesario
 END;
 /
-
 -- Crear una nueva tabla de ejemplo
 CREATE TABLE EjemploTabla (
    id NUMBER,
    nombre VARCHAR2(50)
 );
-
 -- Consultar la tabla de auditoría
 SELECT * FROM Tablas_Creadas_Auditoria;
 
@@ -415,7 +413,6 @@ CREATE TABLE Sesiones_Iniciadas_Auditoria (
 );
 
 --Trigger para la auditoria de sesion:
-
 CREATE OR REPLACE TRIGGER Trigger_Sesion_Iniciada
 AFTER LOGON ON DATABASE
 DECLARE
@@ -426,11 +423,9 @@ BEGIN
    usuario_nombre := ora_login_user;
    -- Obtener la dirección IP del cliente
    direccion_ip := SYS_CONTEXT('USERENV', 'IP_ADDRESS');
-   
    -- Insertar el registro en la tabla de auditoría
    INSERT INTO Sesiones_Iniciadas_Auditoria (usuario_nombre, fecha_inicio, direccion_ip)
    VALUES (usuario_nombre, CURRENT_TIMESTAMP, direccion_ip);
-   
    COMMIT;
 EXCEPTION
    WHEN OTHERS THEN
@@ -447,7 +442,6 @@ SELECT * FROM Sesiones_Iniciadas_Auditoria;
 --------------------------------------------------------------------------------
 
 -- Auditoria con trigger sobre una accion de una tabla:
-
 CREATE TABLE Acciones_Auditoria (
    accion_nombre VARCHAR2(100),
    fecha_accion TIMESTAMP,
@@ -490,15 +484,18 @@ SELECT * FROM Acciones_Auditoria;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+
+--Configuración y Auditoría de Sesiones:
+
 -- Ver todas las opciones de auditorias habilitadas en la Base de Datos:
 SELECT * FROM DBA_PRIV_AUDIT_OPTS;
 
---
--- 1. Habilitar la auditoría de todas las sesiones a la Base de Datos:
+-- Habilitar la auditoría de todas las sesiones a la Base de Datos:
 AUDIT CREATE SESSION;
 
--- 2. Reiniciar la base de datos para aplicar los cambios.
--- 3. Consultar la vista de auditoría sobre iniciar sesión:
+-- Reiniciar la base de datos para aplicar los cambios.
+
+-- Consultar la vista de auditoría sobre iniciar sesión:
 SELECT * FROM DBA_AUDIT_TRAIL WHERE ACTION_NAME = 'LOGON';
 
 
@@ -536,7 +533,7 @@ SELECT * FROM DBA_AUDIT_TRAIL WHERE ACTION_NAME = 'CREATE ROLE' OR ACTION_NAME =
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
--- Auditoria sin Triggers para registrar la creacion de Roles:
+-- Auditoria sin Triggers para registrar la creacion de Usuarios:
 
 -- Habilitar la auditoría de creación de usuarios
 AUDIT CREATE USER;
