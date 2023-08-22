@@ -1,7 +1,8 @@
+
+--KEVIN 
+
 --Se crea Repositorio ADMIN BD
-
 -- alter session set "_ORACLE_SCRIPT" = TRUE;
-
 -- CreaciÃƒÂ³n de Tablespaces
 CREATE TABLESPACE TS_PROCEDIMIENTOS 
 DATAFILE 'C:\xampp\htdocs\AdminBD\Procedimientos01.dbf' SIZE 50M AUTOEXTEND ON;
@@ -61,6 +62,14 @@ SELECT * FROM Procedimientos;
 SELECT * FROM Dentistas;
 SELECT * FROM Pacientes;
 SELECT * FROM Citas;
+
+-- FINALIZA KEVIN 
+
+
+
+
+-- COMIENZA AXEL:
+
 
 -- Inserciones en la tabla "Procedimientos"
 INSERT INTO Procedimientos (idProcedimiento, nombre, descripcion, costo)
@@ -187,8 +196,15 @@ BEGIN
 END;
 /
 
+-- FINALIZA AXEL:
+
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
+
+-- COMIENZA KENNETH:
+
+
 -- RESPALDOS:
 
 /*El usuario admin tiene roles CONNECT, RESOURCE y DBA, lo que le da acceso completo a la base de datos y privilegios de administraciÃ³n.
@@ -235,9 +251,15 @@ C:\> IMPDP SYSTEM/root directory=BACKUPPROYECTO dumpfile=COPIAS.DMP tables=SYSTE
 C:\> IMPDP SYSTEM/root directory=BACKUPPROYECTO dumpfile=SYSTEM.DMP SCHEMAS=SYSTEM
 -- RESPALDOS EN CALIENTE
 
+
+-- FINALIZA KENNETH:
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
--- Seguridad (roles y otros permisos) Ignacio:
+
+-- COMIENZA IGNACIO:
+
+-- Seguridad (roles y otros permisos
 
 -- Crear roles
 CREATE ROLE admin_role2;
@@ -266,7 +288,7 @@ GRANT CONNECT, RESOURCE TO doctor_role;
 -- Para client_role
 GRANT CONNECT TO client_role;
 
---Visualizar los permisos de cada rol:
+--Visualizar los permisos de cada rol por medio de un ciclo:
 DECLARE
   v_role_name VARCHAR2(30);
   v_privilege VARCHAR2(100);
@@ -320,8 +342,13 @@ AUDIT SELECT TABLE, UPDATE TABLE BY doctor;
 AUDIT INSERT TABLE, DELETE TABLE BY doctor;
 
 
+-- FINALIZA IGNACIO:
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
+
+--COMIENZA SEBAS:
+
 -- AUDITORIAS:
 
 --Autorias que registre cuando se crea una tabla.
@@ -554,6 +581,8 @@ GRANT MiNuevoRol TO PRUEBAFINAL;
 -- Visualizar la información de la auditoría para ver los usuarios creados y asignaciones de roles
 SELECT * FROM DBA_AUDIT_TRAIL WHERE ACTION_NAME = 'CREATE USER' OR ACTION_NAME = 'GRANT ROLE';
 
+
+--FINALIZA SEBAS:
 
 --FINALIZA SCRIPT DE PROYECTO.
 --FINALIZA SCRIPT DE PROYECTO.
